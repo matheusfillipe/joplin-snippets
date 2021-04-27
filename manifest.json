@@ -1,6 +1,6 @@
 {
     "required_api_version": "^2.0.0",
-    "name": "Joplin Explorer",
+    "name": "Joplin Snippets",
     "description": "Extension for searching for notes on joplin and copying them as snippets to the clipboard, with a minimal markdown parsing",
     "developer_name": "Matheus Fillipe", 
     "icon": "images/icon.png",
