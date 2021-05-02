@@ -85,6 +85,10 @@ def find_note(title):
             results.append(notes_id[t])
     return [get(endpoints[3]%n, args=['fields=id,title,body']) for n in results]
 
+def get_note(note_id):
+    return get(endpoints[3]%note_id, args=['fields=id,title,body'])
+
+
 def parse(text):
     if not HAS_MARKUP_PARSE:
         return text
