@@ -101,7 +101,7 @@ class KeywordQueryEventListener(EventListener):
                     description="".join(joplin.parse(n["body"])[:96]),
                     on_enter=CopyToClipboardAction(joplin.parse(n["body"]))
                     if jsonlist(n["body"]) is None
-                    else SetUserQueryAction(f"{keyword} jsonsearch {n['id']}"),
+                    else SetUserQueryAction(f"{keyword} jsonsearch {n['id']} "),
                 )
                 for n in notes
             ]
