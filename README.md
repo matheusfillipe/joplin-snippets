@@ -1,4 +1,4 @@
-# Joplin Explorer
+# Joplin snippets
 
 Copy or create snippets of code from joplin right from or to your clipboard.
 <p align="center">
