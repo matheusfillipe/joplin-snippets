@@ -1,6 +1,9 @@
 # Joplin Explorer
 
-Copy snippets of code from joplin to your clipboard.
+Copy or create snippets of code from joplin right from or to your clipboard.
+<p align="center">
+<img height=400 width=80% src="https://github.com/matheusfillipe/joplin-snippets/raw/main/joplin_snippets.gif" />
+</p>
 
 ### Commands
 
