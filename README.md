@@ -4,14 +4,26 @@ Copy snippets of code from joplin to your clipboard.
 
 ### Commands
 
-Type n and the name of a note to search for. Choose it and it will be copied to
+Type `n` and the name of a note to search for. Choose it and it will be copied to
 your clipboard.
 
 If a note has code all the code will be copied to the clipboard without the markup tags. 
 
 You can also have a subsearch for a json code block if you have a code block that is marked with
 `json search` instead of simply 'json'. This way each key of the json code
-block will become searchable.
+block will become searchable. This way you can have an easy selector for
+multiple data in a single note. 
+
+You can use `nc` (note copy) to convert the current clipboard into a note, using
+the provided title from the launcher. This is the way you can create notes from
+the clipboard.
+
+### Requirements
+
+```
+pip3 install marko     # for markup parsing functinalities
+apt-get install xclip  # for creating notes from clipboard
+```
 
 ### Configuration
 

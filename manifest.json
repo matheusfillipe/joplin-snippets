@@ -1,7 +1,7 @@
 {
     "required_api_version": "^2.0.0",
     "name": "Joplin Snippets",
-    "description": "Extension for searching for notes on joplin and copying them as snippets to the clipboard, with a minimal markdown parsing",
+    "description": "Extension for searching for notes on joplin and copying them as snippets to the clipboard, with a minimal markdown parsing. You can also create notes from the clipboard",
     "developer_name": "Matheus Fillipe", 
     "icon": "images/icon.png",
     "options": {
@@ -13,7 +13,15 @@
         "name": "Joplin Explorer",
         "description": "Keyword for the extension",
         "default_value": "n"
-    }, {
+    }, 
+    {
+        "id": "copy-key",
+        "type": "keyword",
+        "name": "Joplin Note From Clipboard",
+        "description": "Keyword for creating notes from the copy clipboard",
+        "default_value": "nc"
+    },
+    {
         "id": "token",
         "type": "input",
         "name": "Api token",

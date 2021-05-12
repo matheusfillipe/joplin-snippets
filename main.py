@@ -1,16 +1,19 @@
 import json
 import re
+import traceback
+import subprocess
 
 from ulauncher.api.client.EventListener import EventListener
+from ulauncher.api.shared.event import KeywordQueryEvent, ItemEnterEvent
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.shared.action.CopyToClipboardAction import \
     CopyToClipboardAction
+from ulauncher.api.shared.action.ExtensionCustomAction import \
+    ExtensionCustomAction
 from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
-from ulauncher.api.shared.action.OpenUrlAction import OpenUrlAction
 from ulauncher.api.shared.action.RenderResultListAction import \
     RenderResultListAction
 from ulauncher.api.shared.action.SetUserQueryAction import SetUserQueryAction
-from ulauncher.api.shared.event import KeywordQueryEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
 import joplin
@@ -46,13 +49,68 @@ class JoplinExtension(Extension):
     def __init__(self):
         super().__init__()
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
+        self.subscribe(ItemEnterEvent, ItemEnterEventListener())
 
+class ItemEnterEventListener(EventListener):
+    def on_event(self, event, extension):
+        try:
+            paste = subprocess.check_output("xclip -o", shell=True).decode()
+        except Exception as e:
+            print(traceback.format_exc())
+            return RenderResultListAction(
+                [
+                    ExtensionResultItem(
+                        icon="images/icon.png",
+                        name="You don't have xlip installed",
+                        on_enter=HideWindowAction(),
+                    )
+                ]
+            )
+
+        title = event.get_data()
+        print(f"note callback: {title}")
+        error = RenderResultListAction(
+            [
+                ExtensionResultItem(
+                    icon="images/icon.png",
+                    name="Something went wrong :(",
+                    on_enter=HideWindowAction(),
+                )
+            ]
+        )
+        try:
+            res = joplin.create(title, paste)
+        except Exception as e:
+            print(traceback.format_exc())
+            return error
+
+        if "error" in res:
+            return error
+        return RenderResultListAction(
+            [
+                ExtensionResultItem(
+                    icon="images/icon.png",
+                    name="Note created!",
+                    on_enter=HideWindowAction(),
+                )
+            ]
+        )
 
 class KeywordQueryEventListener(EventListener):
     def on_event(self, event, extension):
         keyword = event.get_keyword()
-        joplin.reload(extension.preferences["token"], extension.preferences["notebook"])
         query = event.get_argument() or None
+        if keyword == extension.preferences["copy-key"]:
+            print(f"note creation: {query}")
+            return RenderResultListAction(
+                [
+                    ExtensionResultItem(
+                        icon="images/icon.png",
+                        name="Note from Clipboard: " + query,
+                        on_enter=ExtensionCustomAction(query, keep_app_open=True))
+                ]
+            )
+        joplin.reload(extension.preferences["token"], extension.preferences["notebook"])
         if query is None:
             return RenderResultListAction(
                 [
