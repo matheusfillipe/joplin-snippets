@@ -29,7 +29,7 @@ def jsonlist(body):
         if "```" in line and incode:
             lines.append(line.replace("```", ""))
             break
-        if re.match(r"^```json\s+search\s+$", line):
+        if re.match(r"^```json\s+search\s*$", line):
             incode = True
             continue
         if incode:
@@ -68,7 +68,6 @@ class ItemEnterEventListener(EventListener):
             )
 
         title = event.get_data()
-        print(f"note callback: {title}")
         error = RenderResultListAction(
             [
                 ExtensionResultItem(
@@ -101,7 +100,6 @@ class KeywordQueryEventListener(EventListener):
         keyword = event.get_keyword()
         query = event.get_argument() or None
         if keyword == extension.preferences["copy-key"]:
-            print(f"note creation: {query}")
             return RenderResultListAction(
                 [
                     ExtensionResultItem(
