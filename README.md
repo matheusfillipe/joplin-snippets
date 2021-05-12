@@ -2,7 +2,7 @@
 
 Copy or create snippets of code from joplin right from or to your clipboard.
 <p align="center">
-<img height=450 width=90% src="https://github.com/matheusfillipe/joplin-snippets/raw/main/joplin_snippets.gif" />
+<img height=500 width=100% src="https://github.com/matheusfillipe/joplin-snippets/raw/main/joplin_snippets.gif" />
 </p>
 
 ### Commands
