@@ -100,6 +100,16 @@ class KeywordQueryEventListener(EventListener):
         keyword = event.get_keyword()
         query = event.get_argument() or None
         if keyword == extension.preferences["copy-key"]:
+            if query is None:
+                return RenderResultListAction(
+                    [
+                        ExtensionResultItem(
+                            icon="images/icon.png",
+                            name="No input",
+                            on_enter=HideWindowAction(),
+                        )
+                    ]
+                )
             return RenderResultListAction(
                 [
                     ExtensionResultItem(
