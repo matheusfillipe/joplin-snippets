@@ -16,7 +16,7 @@ from ulauncher.api.shared.action.SetUserQueryAction import SetUserQueryAction
 from ulauncher.api.shared.event import ItemEnterEvent, KeywordQueryEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
-import joplin
+from joplin import JoplinNotebookClient, parse
 
 
 def jsonlist(body):
@@ -48,6 +48,7 @@ def jsonlist(body):
 class JoplinExtension(Extension):
     def __init__(self):
         super().__init__()
+        self.joplin = None
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
         self.subscribe(ItemEnterEvent, ItemEnterEventListener())
 
@@ -79,7 +80,7 @@ class ItemEnterEventListener(EventListener):
             ]
         )
         try:
-            res = joplin.create(title, paste)
+            res = extension.joplin.create(title, paste)
         except Exception as e:
             print(traceback.format_exc())
             return error
@@ -96,11 +97,32 @@ class ItemEnterEventListener(EventListener):
             ]
         )
 
+class PreferencesEventListener(EventListener):
+    """ Handles preferences initialization event """
+    def on_event(self, event, extension):
+        extension.joplin = JoplinNotebookClient(event.preferences["token"], event.preferences["notebook"])
+
+class PreferencesUpdateEventListener(EventListener):
+    """ Handles Preferences Update event """
+    def on_event(self, event, extension):
+        """ Event handler """
+        if extension.joplin is None:
+            extension.joplin = JoplinNotebookClient(extension.preferences["token"], extension.preferences["notebook"])
+        if event.id == 'token':
+            extension.joplin.reload(token=event.new_value)
+        if event.id == 'notebook':
+            extension.joplin.reload(notebook=event.new_value)
 
 class KeywordQueryEventListener(EventListener):
     def on_event(self, event, extension):
+        if extension.joplin is None:
+            extension.joplin = JoplinNotebookClient(extension.preferences["token"], extension.preferences["notebook"])
+        if not extension.joplin.connected:
+            return RenderResultListAction([ExtensionResultItem("Can't connect to Joplin Clipper Server")])
+
         keyword = event.get_keyword()
         query = event.get_argument() or None
+
         if keyword == extension.preferences["copy-key"]:
             if query is None:
                 return RenderResultListAction(
@@ -121,7 +143,6 @@ class KeywordQueryEventListener(EventListener):
                     )
                 ]
             )
-        joplin.reload(extension.preferences["token"], extension.preferences["notebook"])
         if query is None:
             return RenderResultListAction(
                 [
@@ -135,7 +156,7 @@ class KeywordQueryEventListener(EventListener):
         args = query.split()
         if args[0] == "jsonsearch" and len(args) >= 2:
             try:
-                n = joplin.get_note(args[1])
+                n = extension.joplin.get_note(args[1])
                 obj = jsonlist(n["body"])
                 query = " ".join(args[2:])
                 keys = [key for key in obj if key.casefold().startswith(query.casefold())]
@@ -163,7 +184,7 @@ class KeywordQueryEventListener(EventListener):
                     ]
                 )
 
-        notes = joplin.find_note(query)
+        notes = extension.joplin.find_note(query)
         if len(notes) == 0:
             return RenderResultListAction([ExtensionResultItem("No search results!")])
         return RenderResultListAction(
@@ -171,8 +192,8 @@ class KeywordQueryEventListener(EventListener):
                 ExtensionResultItem(
                     icon="images/icon.png",
                     name=n["title"],
-                    description="".join(joplin.parse(n["body"])[:96]),
-                    on_enter=CopyToClipboardAction(joplin.parse(n["body"]))
+                    description="".join(parse(n["body"])[:96]),
+                    on_enter=CopyToClipboardAction(parse(n["body"]))
                     if jsonlist(n["body"]) is None
                     else SetUserQueryAction(f"{keyword} jsonsearch {n['id']} "),
                 )
