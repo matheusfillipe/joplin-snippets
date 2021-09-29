@@ -123,26 +123,6 @@ class KeywordQueryEventListener(EventListener):
         keyword = event.get_keyword()
         query = event.get_argument() or None
 
-        if keyword == extension.preferences["copy-key"]:
-            if query is None:
-                return RenderResultListAction(
-                    [
-                        ExtensionResultItem(
-                            icon="images/icon.png",
-                            name="No input",
-                            on_enter=HideWindowAction(),
-                        )
-                    ]
-                )
-            return RenderResultListAction(
-                [
-                    ExtensionResultItem(
-                        icon="images/icon.png",
-                        name="Note from Clipboard: " + query,
-                        on_enter=ExtensionCustomAction(query, keep_app_open=True),
-                    )
-                ]
-            )
         if query is None:
             return RenderResultListAction(
                 [
@@ -153,6 +133,18 @@ class KeywordQueryEventListener(EventListener):
                     )
                 ]
             )
+
+        if keyword == extension.preferences["copy-key"]:
+            return RenderResultListAction(
+                [
+                   ExtensionResultItem(
+                        icon="images/icon.png",
+                        name="Note from Clipboard: " + query,
+                        on_enter=ExtensionCustomAction(query, keep_app_open=True),
+                    )
+                ]
+            )
+
         args = query.split()
         if args[0] == "jsonsearch" and len(args) >= 2:
             try:
