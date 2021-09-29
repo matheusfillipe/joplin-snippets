@@ -1,5 +1,5 @@
-from html.parser import HTMLParser
 import json
+from html.parser import HTMLParser
 
 import requests
 
@@ -8,7 +8,7 @@ try:
     import marko
 
     HAS_MARKUP_PARSE = True
-except:
+except ModuleNotFoundError:
     print(
         "You don't have marko installed. This way markdown will not be parsed! You can fix this with: pip install marko"
     )
@@ -37,7 +37,8 @@ class CodeParser(HTMLParser):
             self.code += data
 
 
-url = "http://localhost:41184/%s?token=" + TOKEN
+port = "41184"
+url = f"http://localhost:{port}/%s?token=" + TOKEN
 endpoints = ["notes", "folders", "folders/%s/notes", "notes/%s"]
 
 
@@ -45,21 +46,21 @@ def reload(token, notebook):
     global url, TOKEN, NOTEBOOK
     TOKEN = token
     NOTEBOOK = notebook
-    url = "http://localhost:41184/%s?token=" + token
+    url = f"http://localhost:{port}/%s?token=" + token
 
 
-def genUrl(endpoint, args=[]):
+def gen_url(endpoint, args=[]):
     endUrl = url % endpoint + ("&" + "&".join(args) if args else "")
     return endUrl
 
 
 def get(endpoint, args=[]):
-    resp = requests.get(url=genUrl(endpoint, args))
+    resp = requests.get(url=gen_url(endpoint, args))
     return resp.json()  # Check the JSON Response Content document
 
 
 def post(endpoint, args=[], params=None):
-    resp = requests.get(url=genUrl(endpoint, args), params=params)
+    resp = requests.get(url=gen_url(endpoint, args), params=params)
     return resp.json()  # Check the JSON Response Content document
 
 
@@ -108,7 +109,7 @@ def get_note(note_id):
 def create(title, body):
     notebook = find_notebook()
     data = json.dumps({"title": title, "body": body, "parent_id": notebook["id"]})
-    resp = requests.post(genUrl("notes"), data=data)
+    resp = requests.post(gen_url("notes"), data=data)
     return resp.json()
 
 

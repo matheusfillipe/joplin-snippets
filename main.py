@@ -1,10 +1,9 @@
 import json
 import re
-import traceback
 import subprocess
+import traceback
 
 from ulauncher.api.client.EventListener import EventListener
-from ulauncher.api.shared.event import KeywordQueryEvent, ItemEnterEvent
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.shared.action.CopyToClipboardAction import \
     CopyToClipboardAction
@@ -14,13 +13,14 @@ from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
 from ulauncher.api.shared.action.RenderResultListAction import \
     RenderResultListAction
 from ulauncher.api.shared.action.SetUserQueryAction import SetUserQueryAction
+from ulauncher.api.shared.event import ItemEnterEvent, KeywordQueryEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
 import joplin
 
 
 def jsonlist(body):
-    if not "```json" in body:
+    if "```json" not in body:
         return None
 
     incode = False
@@ -50,6 +50,7 @@ class JoplinExtension(Extension):
         super().__init__()
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
         self.subscribe(ItemEnterEvent, ItemEnterEventListener())
+
 
 class ItemEnterEventListener(EventListener):
     def on_event(self, event, extension):
@@ -95,6 +96,7 @@ class ItemEnterEventListener(EventListener):
             ]
         )
 
+
 class KeywordQueryEventListener(EventListener):
     def on_event(self, event, extension):
         keyword = event.get_keyword()
@@ -115,7 +117,8 @@ class KeywordQueryEventListener(EventListener):
                     ExtensionResultItem(
                         icon="images/icon.png",
                         name="Note from Clipboard: " + query,
-                        on_enter=ExtensionCustomAction(query, keep_app_open=True))
+                        on_enter=ExtensionCustomAction(query, keep_app_open=True),
+                    )
                 ]
             )
         joplin.reload(extension.preferences["token"], extension.preferences["notebook"])
@@ -135,6 +138,9 @@ class KeywordQueryEventListener(EventListener):
                 n = joplin.get_note(args[1])
                 obj = jsonlist(n["body"])
                 query = " ".join(args[2:])
+                keys = [key for key in obj if key.casefold().startswith(query.casefold())]
+                if len(keys) == 0:
+                    return RenderResultListAction([ExtensionResultItem("No search results!")])
                 return RenderResultListAction(
                     [
                         ExtensionResultItem(
@@ -143,8 +149,7 @@ class KeywordQueryEventListener(EventListener):
                             description=obj[key],
                             on_enter=CopyToClipboardAction(obj[key]),
                         )
-                        for key in obj
-                        if key.casefold().startswith(query.casefold())
+                        for key in keys
                     ]
                 )
             except:
@@ -159,6 +164,8 @@ class KeywordQueryEventListener(EventListener):
                 )
 
         notes = joplin.find_note(query)
+        if len(notes) == 0:
+            return RenderResultListAction([ExtensionResultItem("No search results!")])
         return RenderResultListAction(
             [
                 ExtensionResultItem(
