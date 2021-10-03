@@ -114,7 +114,7 @@ class JoplinNotebookClient:
 
 
     def get_note(self, note_id):
-        return get(self._routes[3] % note_id, args=["fields=id,title,body"])
+        return self._get(self._routes[3] % note_id, args=["fields=id,title,body"])
 
 
     def create(self, title, body):

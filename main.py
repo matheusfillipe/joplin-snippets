@@ -171,7 +171,7 @@ class KeywordQueryEventListener(EventListener):
                         ExtensionResultItem(
                             icon="images/icon.png",
                             name="invalid notebook",
-                            description="You shouldn't delete the notebook id",
+                            description="Don't delete the notebook id",
                         )
                     ]
                 )
