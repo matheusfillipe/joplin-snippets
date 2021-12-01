@@ -42,12 +42,13 @@ class CodeParser(HTMLParser):
 
 
 class JoplinNotebookClient:
-    def __init__(self, token, notebook, modules):
+    def __init__(self, token, notebook, expand, modules):
         self.port = "41184"
-        self.reload(token, notebook, modules)
+        self.reload(token, notebook, expand, modules)
         self._routes = ["notes", "folders", "folders/%s/notes", "notes/%s"]
 
-    def reload(self, token=None, notebook=None, modules=None):
+    def reload(self, token=None, notebook=None, expand=False, modules=None):
+        self.expand = expand.strip() == "yes"
         if token:
             self.token = token
         if notebook:

@@ -101,18 +101,18 @@ class PreferencesEventListener(EventListener):
     """Handles preferences initialization event."""
 
     def on_event(self, event, extension):
+        logger.error("\n\n\n\n\n\n" + "-" * 50)
+        logger.error(event.preferences)
         extension.joplin = JoplinNotebookClient(
             event.preferences["token"],
             event.preferences["notebook"],
+            event.preferences["expand"],
             event.preferences["modules"],
         )
 
 
 class PreferencesUpdateEventListener(EventListener):
     """Handles Preferences Update event."""
-
-    def on_message(self, event, extension):
-        logger.debug(f"{event=}")
 
     def on_event(self, event, extension):
         logger.debug(f"{event=}")
@@ -121,18 +121,18 @@ class PreferencesUpdateEventListener(EventListener):
             extension.joplin = JoplinNotebookClient(
                 extension.preferences["token"],
                 extension.preferences["notebook"],
+                extension.preferences["expand"],
                 extension.preferences["modules"],
             )
-        logger.debug(event)
-        logger.debug(event.id)
         if event.id == "token":
             extension.joplin.reload(token=event.new_value)
         if event.id == "notebook":
             extension.joplin.reload(notebook=event.new_value)
+        if event.id == "expand":
+            extension.joplin.reload(expand=event.new_value)
         if event.id == "modules":
-            logger.debug("----------!!!-----------------")
-            logger.debug(event.new_value)
             extension.joplin.reload(modules=event.new_value)
+        # TODO: replace this all with extension.joplin.reload(**{event.id: event.new_value}) ??
 
 
 class KeywordQueryEventListener(EventListener):
@@ -141,6 +141,7 @@ class KeywordQueryEventListener(EventListener):
             extension.joplin = JoplinNotebookClient(
                 extension.preferences["token"],
                 extension.preferences["notebook"],
+                extension.preferences["expand"],
                 extension.preferences["modules"],
             )
         if not extension.joplin.connected:
@@ -220,7 +221,11 @@ class KeywordQueryEventListener(EventListener):
                     name=n["title"],
                     description="".join(parse(n["body"], use_expand=False)[:96]),
                     on_enter=CopyToClipboardAction(
-                        parse(n["body"], extension.joplin.modules)
+                        parse(
+                            n["body"],
+                            extension.joplin.modules,
+                            use_expand=extension.joplin.expand,
+                        )
                     )
                     if jsonlist(n["body"]) is None
                     else SetUserQueryAction(f"{keyword} jsonsearch {n['id']} "),
@@ -234,10 +239,10 @@ class JoplinExtension(Extension):
     def __init__(self):
         super().__init__()
         self.joplin = None
-        self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
-        self.subscribe(ItemEnterEvent, ItemEnterEventListener())
         self.subscribe(PreferencesEvent, PreferencesEventListener())
         self.subscribe(PreferencesUpdateEvent, PreferencesUpdateEventListener())
+        self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
+        self.subscribe(ItemEnterEvent, ItemEnterEventListener())
 
 
 if __name__ == "__main__":

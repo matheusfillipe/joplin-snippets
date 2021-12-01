@@ -1,7 +1,7 @@
 {
   "required_api_version": "^2.0.0",
   "name": "Joplin Snippets",
-  "description": "Extension for searching for notes on joplin and copying them as snippets to the clipboard, with a minimal markdown parsing. You can also create notes from the clipboard",
+  "description": "Extension for searching for notes on joplin and copying them as snippets to the clipboard, with a minimal markdown parsing. You can also create notes from the clipboard and evaluate python from your notes. Check the github for more info.",
   "developer_name": "Matheus Fillipe",
   "icon": "images/icon.png",
   "options": {
@@ -35,6 +35,17 @@
       "name": "Default Notebook",
       "description": "Default Notebook to search for notes on",
       "default_value": "snippets"
+    },
+    {
+      "id": "expand",
+      "type": "select",
+      "name": "Enable python evalutation?",
+      "description": "yes/no",
+      "default_value": "no",
+      "options": [
+        "yes",
+        "no"
+      ]
     },
     {
       "id": "modules",
