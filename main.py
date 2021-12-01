@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import subprocess
 import traceback
@@ -13,10 +14,14 @@ from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
 from ulauncher.api.shared.action.RenderResultListAction import \
     RenderResultListAction
 from ulauncher.api.shared.action.SetUserQueryAction import SetUserQueryAction
-from ulauncher.api.shared.event import ItemEnterEvent, KeywordQueryEvent
+from ulauncher.api.shared.event import (ItemEnterEvent, KeywordQueryEvent,
+                                        PreferencesEvent,
+                                        PreferencesUpdateEvent)
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
 from joplin import JoplinNotebookClient, parse
+
+logger = logging.getLogger(__name__)
 
 
 def jsonlist(body):
@@ -41,16 +46,8 @@ def jsonlist(body):
     obj = " ".join(lines)
     try:
         return json.loads(obj)
-    except:
+    except Exception:
         return {"error": "You have a json syntax problem"}
-
-
-class JoplinExtension(Extension):
-    def __init__(self):
-        super().__init__()
-        self.joplin = None
-        self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
-        self.subscribe(ItemEnterEvent, ItemEnterEventListener())
 
 
 class ItemEnterEventListener(EventListener):
@@ -58,7 +55,8 @@ class ItemEnterEventListener(EventListener):
         try:
             paste = subprocess.check_output("xclip -o", shell=True).decode()
         except Exception as e:
-            print(traceback.format_exc())
+            logger.error(e)
+            logger.error(traceback.format_exc())
             return RenderResultListAction(
                 [
                     ExtensionResultItem(
@@ -82,7 +80,8 @@ class ItemEnterEventListener(EventListener):
         try:
             res = extension.joplin.create(title, paste)
         except Exception as e:
-            print(traceback.format_exc())
+            logger.error(e)
+            logger.error(traceback.format_exc())
             return error
 
         if "error" in res:
@@ -97,28 +96,57 @@ class ItemEnterEventListener(EventListener):
             ]
         )
 
+
 class PreferencesEventListener(EventListener):
-    """ Handles preferences initialization event """
+    """Handles preferences initialization event."""
+
     def on_event(self, event, extension):
-        extension.joplin = JoplinNotebookClient(event.preferences["token"], event.preferences["notebook"])
+        extension.joplin = JoplinNotebookClient(
+            event.preferences["token"],
+            event.preferences["notebook"],
+            event.preferences["modules"],
+        )
+
 
 class PreferencesUpdateEventListener(EventListener):
-    """ Handles Preferences Update event """
+    """Handles Preferences Update event."""
+
+    def on_message(self, event, extension):
+        logger.debug(f"{event=}")
+
     def on_event(self, event, extension):
+        logger.debug(f"{event=}")
         """ Event handler """
         if extension.joplin is None:
-            extension.joplin = JoplinNotebookClient(extension.preferences["token"], extension.preferences["notebook"])
-        if event.id == 'token':
+            extension.joplin = JoplinNotebookClient(
+                extension.preferences["token"],
+                extension.preferences["notebook"],
+                extension.preferences["modules"],
+            )
+        logger.debug(event)
+        logger.debug(event.id)
+        if event.id == "token":
             extension.joplin.reload(token=event.new_value)
-        if event.id == 'notebook':
+        if event.id == "notebook":
             extension.joplin.reload(notebook=event.new_value)
+        if event.id == "modules":
+            logger.debug("----------!!!-----------------")
+            logger.debug(event.new_value)
+            extension.joplin.reload(modules=event.new_value)
+
 
 class KeywordQueryEventListener(EventListener):
     def on_event(self, event, extension):
         if extension.joplin is None:
-            extension.joplin = JoplinNotebookClient(extension.preferences["token"], extension.preferences["notebook"])
+            extension.joplin = JoplinNotebookClient(
+                extension.preferences["token"],
+                extension.preferences["notebook"],
+                extension.preferences["modules"],
+            )
         if not extension.joplin.connected:
-            return RenderResultListAction([ExtensionResultItem("Can't connect to Joplin Clipper Server")])
+            return RenderResultListAction(
+                [ExtensionResultItem("Can't connect to Joplin Clipper Server")]
+            )
 
         keyword = event.get_keyword()
         query = event.get_argument() or None
@@ -137,7 +165,7 @@ class KeywordQueryEventListener(EventListener):
         if keyword == extension.preferences["copy-key"]:
             return RenderResultListAction(
                 [
-                   ExtensionResultItem(
+                    ExtensionResultItem(
                         icon="images/icon.png",
                         name="Note from Clipboard: " + query,
                         on_enter=ExtensionCustomAction(query, keep_app_open=True),
@@ -151,9 +179,13 @@ class KeywordQueryEventListener(EventListener):
                 n = extension.joplin.get_note(args[1])
                 obj = jsonlist(n["body"])
                 query = " ".join(args[2:])
-                keys = [key for key in obj if key.casefold().startswith(query.casefold())]
+                keys = [
+                    key for key in obj if key.casefold().startswith(query.casefold())
+                ]
                 if len(keys) == 0:
-                    return RenderResultListAction([ExtensionResultItem("No search results!")])
+                    return RenderResultListAction(
+                        [ExtensionResultItem("No search results!")]
+                    )
                 return RenderResultListAction(
                     [
                         ExtensionResultItem(
@@ -165,7 +197,9 @@ class KeywordQueryEventListener(EventListener):
                         for key in keys
                     ]
                 )
-            except:
+            except Exception as e:
+                logger.error(e)
+                logger.error(traceback.format_exc())
                 return RenderResultListAction(
                     [
                         ExtensionResultItem(
@@ -184,14 +218,26 @@ class KeywordQueryEventListener(EventListener):
                 ExtensionResultItem(
                     icon="images/icon.png",
                     name=n["title"],
-                    description="".join(parse(n["body"])[:96]),
-                    on_enter=CopyToClipboardAction(parse(n["body"]))
+                    description="".join(parse(n["body"], use_expand=False)[:96]),
+                    on_enter=CopyToClipboardAction(
+                        parse(n["body"], extension.joplin.modules)
+                    )
                     if jsonlist(n["body"]) is None
                     else SetUserQueryAction(f"{keyword} jsonsearch {n['id']} "),
                 )
                 for n in notes
             ]
         )
+
+
+class JoplinExtension(Extension):
+    def __init__(self):
+        super().__init__()
+        self.joplin = None
+        self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
+        self.subscribe(ItemEnterEvent, ItemEnterEventListener())
+        self.subscribe(PreferencesEvent, PreferencesEventListener())
+        self.subscribe(PreferencesUpdateEvent, PreferencesUpdateEventListener())
 
 
 if __name__ == "__main__":

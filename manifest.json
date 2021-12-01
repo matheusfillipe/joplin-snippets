@@ -1,37 +1,47 @@
 {
-    "required_api_version": "^2.0.0",
-    "name": "Joplin Snippets",
-    "description": "Extension for searching for notes on joplin and copying them as snippets to the clipboard, with a minimal markdown parsing. You can also create notes from the clipboard",
-    "developer_name": "Matheus Fillipe", 
-    "icon": "images/icon.png",
-    "options": {
-        "query_debounce": 0.1
-    },
-    "preferences": [{
-        "id": "extension-key",
-        "type": "keyword",
-        "name": "Joplin Explorer",
-        "description": "Keyword for the extension",
-        "default_value": "n"
-    }, 
+  "required_api_version": "^2.0.0",
+  "name": "Joplin Snippets",
+  "description": "Extension for searching for notes on joplin and copying them as snippets to the clipboard, with a minimal markdown parsing. You can also create notes from the clipboard",
+  "developer_name": "Matheus Fillipe",
+  "icon": "images/icon.png",
+  "options": {
+    "query_debounce": 0.1
+  },
+  "preferences": [
     {
-        "id": "copy-key",
-        "type": "keyword",
-        "name": "Joplin Note From Clipboard",
-        "description": "Keyword for creating notes from the copy clipboard",
-        "default_value": "nc"
+      "id": "extension-key",
+      "type": "keyword",
+      "name": "Joplin Explorer",
+      "description": "Keyword for the extension",
+      "default_value": "n"
     },
     {
-        "id": "token",
-        "type": "input",
-        "name": "Api token",
-        "description": "Api token you can get from joplin under Options -> WebClipper",
-        "default_value": "XXXXXXX"
-    }, {
-        "id": "notebook",
-        "type": "input",
-        "name": "Default Notebook",
-        "description": "Default Notebook to search for notes on",
-        "default_value": "snippets"
-    }]
+      "id": "copy-key",
+      "type": "keyword",
+      "name": "Joplin Note From Clipboard",
+      "description": "Keyword for creating notes from the copy clipboard",
+      "default_value": "nc"
+    },
+    {
+      "id": "token",
+      "type": "input",
+      "name": "Api token",
+      "description": "Api token you can get from joplin under Options -> WebClipper",
+      "default_value": "XXXXXXX"
+    },
+    {
+      "id": "notebook",
+      "type": "input",
+      "name": "Default Notebook",
+      "description": "Default Notebook to search for notes on",
+      "default_value": "snippets"
+    },
+    {
+      "id": "modules",
+      "type": "input",
+      "name": "Modules",
+      "description": "Comma separated list of python modules to import for expansions using ${{}} format",
+      "default_value": "datetime"
+    }
+  ]
 }
