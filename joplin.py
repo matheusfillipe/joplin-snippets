@@ -10,7 +10,7 @@ try:
     HAS_MARKUP_PARSE = True
 except ModuleNotFoundError:
     print(
-            "joplin-snipptets: You don't have marko installed. This way markdown will not be parsed! You can fix this with: pip install marko"
+        "joplin-snipptets: You don't have marko installed. This way markdown will not be parsed! You can fix this with: pip install marko"
     )
 
 
@@ -50,7 +50,7 @@ class JoplinNotebookClient:
         if token is None:
             return
         self._url = f"http://localhost:{self.port}/%s?token=" + token
-        for _ in range(10): # Try 10 ports
+        for _ in range(10):  # Try 10 ports
             if self.ping():
                 self.connected = True
                 break
@@ -60,8 +60,8 @@ class JoplinNotebookClient:
         self._url = f"http://localhost:{self.port}/%s?token=" + token
 
     def _gen_url(self, route, args=[]):
-        endUrl = self._url % route + ("&" + "&".join(args) if args else "")
-        return endUrl
+        end_url = self._url % route + ("&" + "&".join(args) if args else "")
+        return end_url
 
     def _get(self, route, args=[]):
         resp = requests.get(url=self._gen_url(route, args))
@@ -89,33 +89,33 @@ class JoplinNotebookClient:
             page += 1
         return result
 
-
     def find_notebook(self):
         notebooks = self._get_all(self._routes[1])
         notebook = None
         for notebook in notebooks:
             if notebook["title"] == self.notebook:
                 return notebook
-        if not notebook is None:
+        if notebook is not None:
             print("jopling-snippets: Notebook not found")
             return
-
 
     def find_note(self, title):
         notebook = self.find_notebook()
         notes_id = {
-            note["title"]: note["id"] for note in self._get_all(self._routes[2] % notebook["id"])
+            note["title"]: note["id"]
+            for note in self._get_all(self._routes[2] % notebook["id"])
         }
         results = []
         for t in notes_id:
             if title.casefold() in t.casefold():
                 results.append(notes_id[t])
-        return [self._get(self._routes[3] % n, args=["fields=id,title,body"]) for n in results]
-
+        return [
+            self._get(self._routes[3] % n, args=["fields=id,title,body"])
+            for n in results
+        ]
 
     def get_note(self, note_id):
         return self._get(self._routes[3] % note_id, args=["fields=id,title,body"])
-
 
     def create(self, title, body):
         notebook = self.find_notebook()
@@ -135,6 +135,25 @@ def parse(text):
 
 # Basic test
 if __name__ == "__main__":
-    note = find_note("python")[-1]
-    print(parse(note["body"]))
-    create("test", "some note\n ```python\nc='a'\nprint(c)\n```")
+    code = """
+```cobol
+       identification division.
+       program-id. coboltut.
+       author. matheus.
+       date-written. November 15th 2021
+       environment division.
+       configuration section.
+       data division.
+       file section.
+       working-storage section.
+       procedure division.
+           display "START"
+           stop run.
+```
+    """
+
+    import pyperclip
+
+    cd = parse(code)
+    pyperclip.copy(cd)
+    print(f"{cd=}")
