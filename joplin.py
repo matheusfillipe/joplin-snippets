@@ -1,4 +1,7 @@
+import importlib
 import json
+import logging
+import re
 from html.parser import HTMLParser
 
 import requests
@@ -9,7 +12,7 @@ try:
 
     HAS_MARKUP_PARSE = True
 except ModuleNotFoundError:
-    print(
+    logging.warning(
         "joplin-snipptets: You don't have marko installed. This way markdown will not be parsed! You can fix this with: pip install marko"
     )
 
@@ -17,6 +20,7 @@ except ModuleNotFoundError:
 TOKEN = "XXXXXX"
 NOTEBOOK = "snippets"
 
+logger = logging.getLogger(__name__)
 
 class CodeParser(HTMLParser):
     def __init__(self):
@@ -38,14 +42,19 @@ class CodeParser(HTMLParser):
 
 
 class JoplinNotebookClient:
-    def __init__(self, token, notebook):
+    def __init__(self, token, notebook, modules):
         self.port = "41184"
-        self.reload(token, notebook)
+        self.reload(token, notebook, modules)
         self._routes = ["notes", "folders", "folders/%s/notes", "notes/%s"]
 
-    def reload(self, token=None, notebook=None):
-        self.token = token
-        self.notebook = notebook
+    def reload(self, token=None, notebook=None, modules=None):
+        if token:
+            self.token = token
+        if notebook:
+            self.notebook = notebook
+        if modules:
+            self.modules = [n.strip() for n in modules.split(",")]
+
         self.port = "41184"
         if token is None:
             return
@@ -96,7 +105,7 @@ class JoplinNotebookClient:
             if notebook["title"] == self.notebook:
                 return notebook
         if notebook is not None:
-            print("jopling-snippets: Notebook not found")
+            logger.error("jopling-snippets: Notebook not found")
             return
 
     def find_note(self, title):
@@ -124,23 +133,47 @@ class JoplinNotebookClient:
         return resp.json()
 
 
-def parse(text):
+def expand(text, modules=[]):
+    match = r"\$\{\{(.+)\}\}"
+    codes = re.findall(match, text)
+    if not codes:
+        return text
+    for name in modules:
+        try:
+            globals()[name] = importlib.import_module(name)
+        except ModuleNotFoundError:
+            return f"ERROR: {name} cannot be imported"
+    for code in codes:
+        try:
+            text = re.sub(match, str(eval(code)), text, 1)
+        except Exception as e:
+            logger.error("\nError on joplin-snippets!")
+            logger.error(e)
+            logger.error("Maybe you forgot to add a module to the extension settings?")
+            logger.error(f"{modules=}")
+            logger.error("-" * 80)
+    return text
+
+
+def parse(text, modules=[], use_expand=True):
     if not HAS_MARKUP_PARSE:
         return text
     html = marko.convert(text)
     parser = CodeParser()
     parser.feed(html)
-    return parser.code if parser.code else text
+    text = text if not parser.code else parser.code
+    return expand(text, modules) if use_expand else text
 
 
 # Basic test
 if __name__ == "__main__":
     code = """
 ```cobol
+       date-written. ${{1+1}}
        identification division.
        program-id. coboltut.
        author. matheus.
-       date-written. November 15th 2021
+       date-written. ${{datetime.date.today().strftime('%B %-dth %Y')}}
        environment division.
        configuration section.
        data division.
@@ -151,9 +184,4 @@ if __name__ == "__main__":
            stop run.
 ```
     """
-
-    import pyperclip
-
-    cd = parse(code)
-    pyperclip.copy(cd)
-    print(f"{cd=}")
+    print(parse(code, ['datetime']))
