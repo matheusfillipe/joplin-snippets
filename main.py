@@ -19,7 +19,11 @@ from ulauncher.api.shared.event import (ItemEnterEvent, KeywordQueryEvent,
                                         PreferencesUpdateEvent)
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
-from joplin import JoplinNotebookClient, parse
+from joplin import (FUZZY_LIMIT, HAS_FUZZY_SEARCH, MIN_FUZZY_SCORE,
+                    TRIGGER_FUZZY_AT, JoplinNotebookClient, parse)
+
+if HAS_FUZZY_SEARCH:
+    from thefuzz import process
 
 logger = logging.getLogger(__name__)
 
@@ -180,9 +184,18 @@ class KeywordQueryEventListener(EventListener):
                 n = extension.joplin.get_note(args[1])
                 obj = jsonlist(n["body"])
                 query = " ".join(args[2:])
-                keys = [
-                    key for key in obj if key.casefold().startswith(query.casefold())
-                ]
+                if HAS_FUZZY_SEARCH and len(query) >= TRIGGER_FUZZY_AT:
+                    keys = [
+                        result[0]
+                        for result in process.extract(query, list(obj.keys()), limit=FUZZY_LIMIT)
+                        if result[1] >= MIN_FUZZY_SCORE
+                    ]
+                else:
+                    keys = [
+                        key
+                        for key in obj
+                        if key.casefold().startswith(query.casefold())
+                    ]
                 if len(keys) == 0:
                     return RenderResultListAction(
                         [ExtensionResultItem("No search results!")]

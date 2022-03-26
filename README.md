@@ -25,6 +25,7 @@ the clipboard.
 
 ```
 pip3 install marko     # for markup parsing functinalities
+pip3 install thefuzz   # for fuzzy searching
 apt-get install xclip  # for creating notes from clipboard
 ```
 

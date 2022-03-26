@@ -16,8 +16,20 @@ except ModuleNotFoundError:
         "joplin-snipptets: You don't have marko installed. This way markdown will not be parsed! You can fix this with: pip install marko"
     )
 
+MIN_FUZZY_SCORE = 40
+FUZZY_LIMIT = 15
+TRIGGER_FUZZY_AT = 3
+HAS_FUZZY_SEARCH = False
+try:
+    from thefuzz import process
 
-TOKEN = "XXXXXX"
+    HAS_FUZZY_SEARCH = True
+except ModuleNotFoundError:
+    logging.warning(
+        "joplin-snipptets: You don't have thefuzz installed. This way there will be no fuzzy search! You can fix this with: pip install thefuzz"
+    )
+
+TOKEN = "XXXXXXXXXX"
 NOTEBOOK = "snippets"
 
 logger = logging.getLogger(__name__)
@@ -112,13 +124,21 @@ class JoplinNotebookClient:
     def find_note(self, title):
         notebook = self.find_notebook()
         notes_id = {
-            note["title"]: note["id"]
+            note["id"]: note["title"]
             for note in self._get_all(self._routes[2] % notebook["id"])
+            if "error" not in note
         }
         results = []
-        for t in notes_id:
-            if title.casefold() in t.casefold():
-                results.append(notes_id[t])
+        if HAS_FUZZY_SEARCH and len(title) >= TRIGGER_FUZZY_AT:
+            results = [
+                result[2]
+                for result in process.extract(title, notes_id, limit=FUZZY_LIMIT)
+                if result[1] >= MIN_FUZZY_SCORE
+            ]
+        else:
+            for id, t in notes_id.items():
+                if title.casefold() in t.casefold():
+                    results.append(id)
         return [
             self._get(self._routes[3] % n, args=["fields=id,title,body"])
             for n in results
@@ -185,4 +205,9 @@ if __name__ == "__main__":
            stop run.
 ```
     """
-    print(parse(code, ['datetime']))
+    print(parse(code, ["datetime"]))
+    j = JoplinNotebookClient(TOKEN, NOTEBOOK, "", None)
+    from pprint import pprint
+
+    notes = j.find_note("tmux")
+    pprint(notes)
